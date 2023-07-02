@@ -24,10 +24,10 @@ socketio = SocketIO(app)
 @mqtt.on_connect()
 def handle_connect(client, userdata, flags, rc):
    if rc == 0:
-       print('Connected successfully')
+       print('MQTT - Connected successfully')
        mqtt.subscribe(topic) # subscribe topic
    else:
-       print('Bad connection. Code:', rc)
+       print('MQTT - Bad connection. Code:', rc)
 
 @mqtt.on_message()
 def handle_mqtt_message(client, userdata, message):
@@ -35,21 +35,23 @@ def handle_mqtt_message(client, userdata, message):
        topic=message.topic,
        payload=message.payload.decode()
   )
-   print('Received message on topic: {topic} with payload: {payload}'.format(**data))
-   socketio.emit('food', data=data)
+   print('MQTT - Received message on topic: {topic} with payload: {payload}'.format(**data))
+   
+   if data['topic'] == '/plat/food':
+        socketio.emit('food', data=data)
 
 @app.route("/")
 def hello_world():
     return render_template("index.html")
 
 @socketio.on('schedule')
-def handle_publish(json_str):
-    data = json.loads(json_str)
-    mqtt.publish(data['topic'], data['payload'])
+def handle_publish(message):
+    print(f'SOCKETIO - Received schedule message: {message}')
+    mqtt.publish('/plat/schedule', message)
 
 @socketio.event
 def connect():
-    print('Client connected')
+    print('SOCKETIO - Client connected')
 
 if __name__ == '__main__':
     socketio.run(app, debug=True, host='0.0.0.0')
